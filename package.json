@@ -1,5 +1,5 @@
 {
-  "name": "@cashfree/troupe",
+  "name": "@mehuljatiya/troupe",
   "version": "0.1.15",
   "description": "AI-powered workflow toolkit for designers, developers, and PMs — 9 slash commands for Claude Code",
   "type": "module",
@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "start": "node bin/cli.js setup",
-    "release": "npm version patch && git push && npm publish"
+    "release": "npm version patch && git push && npm publish --access public"
   },
   "keywords": [
     "claude",

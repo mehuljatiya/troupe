@@ -6,12 +6,19 @@ If the user hasn't shared a Figma URL, ask for one before proceeding.
 
 ## Step 1 — Read the design
 
-Call `mcp__claude_ai_Figma__whoami` first. If it fails, tell the user:
+Call `mcp__claude_ai_Figma__whoami` first. If it fails or returns an auth error, tell the user:
 
-> **Setup required:**
-> 1. Open Claude desktop app → Settings → Integrations → Enable Figma
-> 2. Quit and relaunch Claude Code
-> 3. Re-run `/spec` with your Figma URL
+> **Figma not connected. Fix it in 30 seconds:**
+>
+> 1. Press `Ctrl+C` to exit Claude
+> 2. In your terminal, run:
+>    ```
+>    claude mcp add --transport http figma https://mcp.figma.com/mcp --scope user
+>    ```
+> 3. Type `claude` to reopen Claude Code
+> 4. Type `/mcp` → select **figma** → select **Authenticate**
+> 5. Log in to Figma in the browser that opens, then come back here
+> 6. Re-run `/spec` with your Figma URL
 
 Call `get_design_context` on the provided URL. Also call `get_screenshot` to visually verify all variants and states.
 

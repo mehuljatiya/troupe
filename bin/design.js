@@ -17,6 +17,11 @@ console.log()
 
 try {
   execSync('claude', { stdio: 'inherit' })
-} catch {
-  // claude exited normally or user pressed Ctrl+C
+} catch (err) {
+  if (err.code === 'ENOENT') {
+    console.log(chalk.red('\nClaude Code not found.'))
+    console.log('Run: ' + chalk.cyan('npx @mehuljatiya/troupe setup'))
+    process.exit(1)
+  }
+  // all other exits (Ctrl+C, non-interactive shell errors) — ignore silently
 }

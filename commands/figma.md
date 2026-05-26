@@ -6,15 +6,17 @@ Help me turn a Figma design into working code.
 
 Before doing anything, call `mcp__claude_ai_Figma__whoami`. If it fails or returns an auth error, stop and tell the user:
 
-> **Setup required before this command can run:**
+> **Figma not connected. Fix it in 30 seconds:**
 >
-> 1. Open the **Claude desktop app**
-> 2. Go to **Settings → Integrations**
-> 3. Find **Figma** and click **Enable**
-> 4. **Quit and relaunch** Claude Code — the MCP won't load until you restart
-> 5. Then re-run `/figma` with your Figma URL
->
-> If you've already done this and it still fails, run `claude mcp add --transport http figma https://mcp.figma.com/mcp --scope user` in your terminal, then restart.
+> 1. Press `Ctrl+C` to exit Claude
+> 2. In your terminal, run:
+>    ```
+>    claude mcp add --transport http figma https://mcp.figma.com/mcp --scope user
+>    ```
+> 3. Type `claude` to reopen Claude Code
+> 4. Type `/mcp` → select **figma** → select **Authenticate**
+> 5. Log in to Figma in the browser that opens, then come back here
+> 6. Re-run `/figma` with your Figma URL
 
 Do not proceed until Figma MCP is confirmed working.
 

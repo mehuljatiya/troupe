@@ -44,7 +44,7 @@ export async function runSetup() {
       console.log()
       console.log('No problem. Install it yourself when ready:')
       console.log('  ' + chalk.cyan('npm install -g @anthropic-ai/claude-code'))
-      console.log('\nThen re-run: ' + chalk.cyan('npx @cashfree/troupe setup'))
+      console.log('\nThen re-run: ' + chalk.cyan('npx @mehuljatiya/troupe setup'))
       process.exit(0)
     }
 
@@ -66,12 +66,15 @@ export async function runSetup() {
 
   const { installed, skipped } = installSlashCommands()
 
-  if (skipped.length > 0) {
-    console.log(chalk.yellow(`  ${skipped.length} workflow(s) already exist — skipping to avoid overwriting`))
+  if (installed.length > 0 && skipped.length > 0) {
+    console.log(chalk.green(`  ✓ Installed ${installed.length} command(s)`))
+    console.log(chalk.yellow(`  ${skipped.length} already existed — skipped to avoid overwriting`))
     console.log(chalk.dim('  (delete them from ~/.claude/commands/ and re-run to reset)'))
-  }
-  if (installed.length > 0) {
-    console.log(chalk.green(`  ✓ Installed ${installed.length} design workflow(s)`))
+  } else if (installed.length > 0) {
+    console.log(chalk.green(`  ✓ Installed ${installed.length} slash commands`))
+  } else if (skipped.length > 0) {
+    console.log(chalk.green(`  ✓ All ${skipped.length} commands already installed`))
+    console.log(chalk.dim('  (delete them from ~/.claude/commands/ and re-run to reset)'))
   }
   console.log()
 
@@ -85,6 +88,7 @@ export async function runSetup() {
   }).catch(() => false)
 
   let figmaConnected = false
+  let figmaAuthNeeded = false
 
   if (wantsFigma) {
     const alreadyConfigured = isFigmaMcpConfigured()
@@ -100,6 +104,7 @@ export async function runSetup() {
         )
         console.log(chalk.green('  ✓ Figma MCP configured'))
         figmaConnected = true
+        figmaAuthNeeded = true
       } catch {
         console.log(chalk.yellow('  Could not auto-configure Figma.'))
         console.log('  Run this manually after setup:')
@@ -114,7 +119,7 @@ export async function runSetup() {
         console.log('    1. Type ' + chalk.cyan('/mcp') + ' and press Enter')
         console.log('    2. Select ' + chalk.cyan('figma') + ' → ' + chalk.cyan('Authenticate'))
         console.log('    3. Log in to Figma in the browser that opens, then come back here')
-        console.log('    4. Type ' + chalk.cyan('/exit') + ' to return to setup\n')
+        console.log('    4. Press ' + chalk.cyan('Ctrl+C') + ' (or type /quit) to return here\n')
 
         const doAuth = await confirm({
           message: 'Open Claude to authenticate Figma now?',
@@ -125,6 +130,7 @@ export async function runSetup() {
           try {
             execSync('claude', { stdio: 'inherit' })
             console.log(chalk.green('\n  ✓ Figma authentication complete\n'))
+            figmaAuthNeeded = false
           } catch {
             console.log(chalk.dim('\n  (You can authenticate later — type /mcp inside Claude)\n'))
           }
@@ -139,30 +145,35 @@ export async function runSetup() {
   }
 
   // ── Step 4: Browser & Figma plugins ─────────────────────────────────────
-  console.log(chalk.bold('Step 4/5') + ' — Browser tools')
-  console.log(chalk.dim('  Enables /document-component to open a browser preview and push docs into Figma.\n'))
+  console.log(chalk.bold('Step 4/5') + ' — Browser tools ' + chalk.dim('(optional)'))
+  console.log(chalk.dim('  Only needed for /document-component\'s push-to-Figma feature.\n'))
 
-  installPlugin('chrome-devtools-mcp', 'chrome-devtools-plugins', 'Chrome DevTools')
-  installPlugin('figma-friend', 'figma-friend-marketplace', 'Figma Friend')
+  const chromeOk = installPlugin('chrome-devtools-mcp', 'chrome-devtools-plugins', 'Chrome DevTools')
+  const figmaFriendOk = installPlugin('figma-friend', 'figma-friend-marketplace', 'Figma Friend')
+  const browserToolsOk = chromeOk && figmaFriendOk
 
   // ── Step 5: API key ──────────────────────────────────────────────────────
   console.log(chalk.bold('Step 5/5') + ' — API key')
-
-  if (!claudeInstalled) {
-    console.log('  You\'ll need a free Anthropic API key.')
-    console.log('  Get one at: ' + chalk.cyan('https://console.anthropic.com'))
-    console.log('  Claude will ask for it when you first run ' + chalk.cyan('claude') + '.\n')
-  } else {
-    console.log(chalk.green('  ✓ Already configured\n'))
-  }
+  console.log('  You\'ll need an Anthropic API key to use Claude.')
+  console.log('  Get one free at: ' + chalk.cyan('https://console.anthropic.com'))
+  console.log(chalk.dim('  Claude will ask for it on first launch if it\'s not set yet.\n'))
 
   // ── Register design command globally ────────────────────────────────────
+  console.log(chalk.dim('  Installing design command globally...'))
   try {
-    npmInstallGlobal('@cashfree/troupe')
-  } catch { /* non-critical — claude still works without design command */ }
+    npmInstallGlobal('@mehuljatiya/troupe')
+    console.log(chalk.green('  ✓ design command ready\n'))
+  } catch {
+    console.log(chalk.dim('  (Could not install design command — you can still use claude directly)\n'))
+  }
 
   // ── Done ─────────────────────────────────────────────────────────────────
-  showNextSteps(figmaConnected)
+  showNextSteps({
+    figmaConnected,
+    figmaAuthNeeded,
+    browserToolsOk,
+    commandCount: installed.length + skipped.length,
+  })
 }
 
 function npmInstallGlobal(pkg) {
@@ -206,7 +217,7 @@ function npmInstallGlobal(pkg) {
     } catch {
       console.log(chalk.red('\n  Install still failed after fixing permissions.'))
       console.log('  Try opening a new terminal tab and re-running:')
-      console.log('  ' + chalk.cyan('npx @cashfree/troupe@latest setup'))
+      console.log('  ' + chalk.cyan('npx @mehuljatiya/troupe@latest setup'))
       throw new Error('retry-failed')
     }
   }
@@ -289,19 +300,23 @@ function installPlugin(pluginName, marketplace, label) {
     const result = execSync('claude plugin list', { encoding: 'utf8', stdio: 'pipe' })
     if (result.toLowerCase().includes(pluginName.toLowerCase())) {
       console.log(chalk.green(`  ✓ ${label} already installed`))
-      return
+      console.log()
+      return true
     }
   } catch { /* continue */ }
 
   try {
     execSync(`claude plugin install ${pluginName}@${marketplace} --scope user`, { stdio: 'pipe' })
     console.log(chalk.green(`  ✓ ${label} installed`))
+    console.log()
+    return true
   } catch {
     console.log(chalk.yellow(`  Could not install ${label} automatically.`))
     console.log('  Run this manually:')
-    console.log('  ' + chalk.cyan(`claude plugin install ${pluginName}@${marketplace}`))
+    console.log('  ' + chalk.cyan(`claude plugin install ${pluginName}@${marketplace} --scope user`))
+    console.log()
+    return false
   }
-  console.log()
 }
 
 function isClaudeInstalled() {
@@ -316,7 +331,7 @@ function isClaudeInstalled() {
 function isFigmaMcpConfigured() {
   try {
     const result = execSync('claude mcp list', { encoding: 'utf8', stdio: 'pipe' })
-    return result.toLowerCase().includes('figma')
+    return result.includes('mcp.figma.com')
   } catch {
     return false
   }
@@ -340,7 +355,7 @@ function installSlashCommands() {
     files = readdirSync(sourceDir).filter(f => f.endsWith('.md'))
   } catch {
     console.log(chalk.red('  Could not read commands from package — it may be corrupted.'))
-    console.log(chalk.dim('  Try re-running: npx @cashfree/troupe@latest setup'))
+    console.log(chalk.dim('  Try re-running: npx @mehuljatiya/troupe@latest setup'))
     return { installed: [], skipped: [] }
   }
 
@@ -364,22 +379,44 @@ function installSlashCommands() {
   return { installed, skipped }
 }
 
-function showNextSteps(figmaConnected) {
+function showNextSteps({ figmaConnected, figmaAuthNeeded, browserToolsOk, commandCount }) {
   console.log('─'.repeat(50))
   console.log(chalk.bold('\nYou\'re all set!\n'))
   console.log(chalk.yellow('  Open a new terminal tab first') + ' so PATH updates take effect.\n')
   console.log('To start:')
   console.log('  1. Open a new terminal tab in your project folder')
   console.log('  2. Type ' + chalk.cyan('claude') + ' (or ' + chalk.cyan('design') + ' for a command cheat sheet)')
+  console.log()
 
-  if (figmaConnected) {
-    console.log('  3. Inside Claude, type ' + chalk.cyan('/mcp') + ' → figma → Authenticate')
-    console.log('     (one-time step to connect your Figma account)\n')
+  // ── Setup summary ────────────────────────────────────────────────────────
+  console.log(chalk.bold('Setup summary:'))
+  console.log(chalk.green(`  ✓ ${commandCount} slash commands installed`))
+  console.log(chalk.green('  ✓ Claude Code ready'))
+
+  if (figmaConnected && !figmaAuthNeeded) {
+    console.log(chalk.green('  ✓ Figma connected') + chalk.dim('  → /figma, /spec, /qa, /document-component ready'))
+  } else if (figmaConnected && figmaAuthNeeded) {
+    console.log(chalk.yellow('  ⚠ Figma configured — authentication still needed'))
+    console.log(chalk.dim('    Inside Claude: type /mcp → figma → Authenticate'))
+    console.log(chalk.dim('    (/figma, /spec, /qa, /document-component won\'t work until authenticated)'))
   } else {
-    console.log()
+    console.log(chalk.yellow('  ⚠ Figma not connected'))
+    console.log(chalk.dim('    /figma, /spec, /qa, /document-component need Figma to work'))
+    console.log(chalk.dim('    To add it: claude mcp add --transport http figma https://mcp.figma.com/mcp --scope user'))
+    console.log(chalk.dim('    Then in Claude: /mcp → figma → Authenticate'))
   }
 
-  console.log('Available workflows (type inside Claude):')
+  if (browserToolsOk) {
+    console.log(chalk.green('  ✓ Browser tools ready') + chalk.dim('  → /document-component push-to-Figma available'))
+  } else {
+    console.log(chalk.yellow('  ⚠ Browser tools not installed'))
+    console.log(chalk.dim('    /document-component will generate docs but won\'t push to Figma'))
+    console.log(chalk.dim('    To add: claude plugin install chrome-devtools-mcp@chrome-devtools-plugins --scope user'))
+    console.log(chalk.dim('            claude plugin install figma-friend@figma-friend-marketplace --scope user'))
+  }
+
+  console.log()
+  console.log('All commands (type inside Claude):')
   console.log('  ' + chalk.cyan('/figma') + ' [url]              Pull a Figma design and build it')
   console.log('  ' + chalk.cyan('/document-component') + ' [url]  Generate full component docs from Figma')
   console.log('  ' + chalk.cyan('/spec') + ' [url]               Ticket-ready spec with acceptance criteria')

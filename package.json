@@ -1,6 +1,6 @@
 {
   "name": "@mehuljatiya/troupe",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "AI-powered workflow toolkit for designers, developers, and PMs — 9 slash commands for Claude Code",
   "type": "module",
   "bin": {

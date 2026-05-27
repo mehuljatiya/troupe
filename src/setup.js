@@ -44,7 +44,7 @@ export async function runSetup() {
       console.log()
       console.log('No problem. Install it yourself when ready:')
       console.log('  ' + chalk.cyan('npm install -g @anthropic-ai/claude-code'))
-      console.log('\nThen re-run: ' + chalk.cyan('npx @mehuljatiya/troupe setup'))
+      console.log('\nThen re-run: ' + chalk.cyan('npx cashfree-troupe setup'))
       process.exit(0)
     }
 
@@ -161,7 +161,7 @@ export async function runSetup() {
   // ── Register design command globally ────────────────────────────────────
   console.log(chalk.dim('  Installing design command globally...'))
   try {
-    npmInstallGlobal('@mehuljatiya/troupe')
+    npmInstallGlobal('cashfree-troupe')
     console.log(chalk.green('  ✓ design command ready\n'))
   } catch {
     console.log(chalk.dim('  (Could not install design command — you can still use claude directly)\n'))
@@ -217,7 +217,7 @@ function npmInstallGlobal(pkg) {
     } catch {
       console.log(chalk.red('\n  Install still failed after fixing permissions.'))
       console.log('  Try opening a new terminal tab and re-running:')
-      console.log('  ' + chalk.cyan('npx @mehuljatiya/troupe@latest setup'))
+      console.log('  ' + chalk.cyan('npx cashfree-troupe@latest setup'))
       throw new Error('retry-failed')
     }
   }
@@ -355,7 +355,7 @@ function installSlashCommands() {
     files = readdirSync(sourceDir).filter(f => f.endsWith('.md'))
   } catch {
     console.log(chalk.red('  Could not read commands from package — it may be corrupted.'))
-    console.log(chalk.dim('  Try re-running: npx @mehuljatiya/troupe@latest setup'))
+    console.log(chalk.dim('  Try re-running: npx cashfree-troupe@latest setup'))
     return { installed: [], skipped: [] }
   }
 
